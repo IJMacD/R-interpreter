@@ -1,0 +1,15 @@
+{
+  "name": "r-interpreter",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "https://ijmacd.github.io/R-interpreter/",
+  "bin": {
+    "r-cli": "./cli.js"
+  },
+  "dependencies": {
+    "typescript": "^3.6.3"
+  },
+  "scripts": {
+    "postinstall": "npx typescript --lib es2015 ./matrix.ts"
+  }
+}
