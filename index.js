@@ -224,13 +224,13 @@ function interpretTokens(context, setContext, tokens) {
 
         /*
          * evaluate range with step
-         * e.g.  1:10:2
+         * e.g.  1:2:10
          */
         if (isNumeric(context, t1) && t2.type === "range" &&
             isNumeric(context, t3) && t4.type === "range" &&
             isNumeric(context, t5))
         {
-            return range(evaluateNumeric(context, t1), evaluateNumeric(context, t3), evaluateNumeric(context, t5));
+            return range(evaluateNumeric(context, t1), evaluateNumeric(context, t5), evaluateNumeric(context, t3));
         }
 
         if (t2.type !== "operator" || t4.type !== "operator")
@@ -306,6 +306,7 @@ function removeVariable (context, setContext, name) {
  * @param {number} step
  */
 function range (start, end, step=1) {
+    step = ((start > end) ? -1 : 1) * Math.abs(step);
     return Array(Math.floor((end - start)/step) + 1).fill(0).map((n,i) => (i * step) + start);
 }
 
