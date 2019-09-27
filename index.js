@@ -3,7 +3,7 @@
 /** @typedef {number|string|boolean|number[]|string[]|boolean[]|Matrix} ValueType */
 /** @typedef {import('./tokenizer').Token} Token */
 
-const { evaluateExpression, evaluateVector, evaluateNumeric, isNumeric, evaluateValue, isVector, isString, evaluateString } = require('./evaluate');
+const { evaluateExpression, evaluateVector, evaluateNumeric, isNumeric, isVector, isString, evaluateString } = require('./evaluate');
 const tokenizer = require('./tokenizer');
 const Matrix = require('./matrix').default;
 const { identity } = require('./matrix');
@@ -18,7 +18,7 @@ module.exports = interpreter;
  * @returns {ValueType}
  */
 function interpreter (command, context, setContext) {
-    if (command.length === 0) {
+    if (!command || command.trim().length === 0) {
         return;
     }
 
@@ -117,7 +117,44 @@ function interpretTokens(context, setContext, tokens) {
          * e.g. "a" * 3
          */
         if (isString(context, t1) && (t2.value === "*" || t2.value === "×") && isNumeric(context, t3)) {
-            return evaluateString(context, t1).repeat(evaluateNumeric(context, t3))
+            return evaluateString(context, t1).repeat(evaluateNumeric(context, t3));
+        }
+
+        /*
+         * evaluate string repetition
+         * e.g. 4 * "b"
+         */
+        if (isNumeric(context, t1) && (t2.value === "*" || t2.value === "×") && isString(context, t3)) {
+            return evaluateString(context, t3).repeat(evaluateNumeric(context, t1));
+        }
+
+        /*
+         * evaluate string division
+         * e.g. "ccccc" / 5
+         */
+        if (isString(context, t1) && (t2.value === "/" || t2.value === "÷") && isNumeric(context, t3)) {
+            const s = evaluateString(context, t1);
+            return s.substr(0, Math.floor(s.length / evaluateNumeric(context, t3)));
+        }
+
+        /*
+         * evaluate string addition
+         * e.g. "ccccc" + 3
+         */
+        if (isString(context, t1) && t2.value === "+" && isNumeric(context, t3)) {
+            const s = evaluateString(context, t1);
+            const newLength = s.length + evaluateNumeric(context, t3);
+            return s.repeat(Math.ceil(newLength / s.length)).substr(0, newLength);
+        }
+
+        /*
+         * evaluate string subtraction
+         * e.g. "ccccc" - 2
+         */
+        if (isString(context, t1) && t2.value === "-" && isNumeric(context, t3)) {
+            const s = evaluateString(context, t1);
+            const newLength = s.length - evaluateNumeric(context, t3);
+            return s.substr(0, newLength);
         }
 
         /*

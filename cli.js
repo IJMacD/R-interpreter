@@ -26,6 +26,10 @@ repl.start({ prompt: "> ", eval: rEval, writer: formatOutput });
  * @returns {string}
  */
 function formatOutput (value) {
+  if (typeof value === "undefined") {
+    return "";
+  }
+
   if (value instanceof Matrix) {
     return value.toString();
   }
