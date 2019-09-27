@@ -1,123 +1,55 @@
+const Matrix = require('./matrix').default;
+
 /** @typedef {import('./').Context} Context */
 /** @typedef {import('./').Vector} Vector */
 /** @typedef {import('./').ValueType} ValueType */
 /** @typedef {import('./tokenizer').Token} Token */
 
 module.exports = {
-    evaluateValue,
+    evaluateExpression,
     evaluateNumeric,
     evaluateVector,
     evaluateString,
-    evaluateExpression,
+    evaluateMatrix,
     isNumeric,
     isVector,
     isString,
+    isMatrix,
 };
 
 /**
  *
  * @param {Context} context
- * @param {Token|number|string} token
+ * @param {Token|ValueType} t1
+ * @param {string} op
+ * @param {Token|ValueType} t3
  */
-function evaluateValue (context, token) {
-    if (typeof token === "number" || typeof token === "string") {
-        return token;
+function evaluateExpression (context, t1, op, t3) {
+    if (isNumeric(context, t1) && isNumeric(context, t3)) {
+        return evaluteScalarExpression(context, t1, op, t3);
     }
 
-    const v = token.type === "name" ? context[token.value] : token.value;
-
-    if (typeof v === "undefined") {
-        throw Error("symbol not found: " + token.value);
+    if (isVector(context, t1) && isVector(context, t3)) {
+        return evaluateVectorExpression(context, t1, op, t3);
     }
 
-    return v;
-}
-
-/**
- *
- * @param {Context} context
- * @param {Token|ValueType} value
- */
-function isNumeric (context, value) {
-    if (typeof value === "number") {
-        return true;
+    if (isVector(context, t1) && isNumeric(context, t3)) {
+        return evaluateVectorScalarExpression(context, t1, op, t3);
     }
 
-    if (Array.isArray(value) || typeof value !== "object") {
-        return false;
+    if (isNumeric(context, t1) && isVector(context, t3)) {
+        return evaluateScalarVectorExpression(context, t1, op, t3);
     }
 
-    if (value.type !== "number" && value.type !== "name") {
-        return false;
+    if (isMatrix(context, t1) && isNumeric(context, t3)) {
+        return evaluateMatrixScalarExpression(context, t1, op, t3);
     }
 
-    const v = value.type === "name" ? context[value.value] : value.value;
-
-    if (typeof v === "undefined") {
-        return false;
-    } else if (typeof v !== "number") {
-        return false;
+    if (isNumeric(context, t1) && isMatrix(context, t3)) {
+        return evaluateScalarMatrixExpression(context, t1, op, t3);
     }
 
-    return true;
-}
-
-/**
- *
- * @param {Context} context
- * @param {Token|ValueType} value
- */
-function isString (context, value) {
-    if (typeof value === "string") {
-        return true;
-    }
-
-    if (Array.isArray(value) || typeof value !== "object") {
-        return false;
-    }
-
-    if (value.type !== "string" && value.type !== "name") {
-        return false;
-    }
-
-    const v = value.type === "name" ? context[value.value] : value.value;
-
-    if (typeof v === "undefined") {
-        return false;
-    } else if (typeof v !== "string") {
-        return false;
-    }
-
-    return true;
-}
-
-/**
- *
- * @param {Context} context
- * @param {Token|ValueType} value
- */
-function isVector (context, value) {
-    if (Array.isArray(value)) {
-        return true;
-    }
-
-    if (typeof value !== "object") {
-        return false;
-    }
-
-    if (value.type !== "name") {
-        return false;
-    }
-
-    const v = context[value.value];
-
-    if (typeof v === "undefined") {
-        return false;
-    } else if (!Array.isArray(v)) {
-        return false;
-    }
-
-    return true;
+    throw Error("Invalid expression");
 }
 
 /**
@@ -214,28 +146,27 @@ function evaluateVector (context, token) {
 /**
  *
  * @param {Context} context
- * @param {Token|ValueType} t1
- * @param {string} op
- * @param {Token|ValueType} t3
+ * @param {Token|Matrix} token
+ * @returns {Matrix}
  */
-function evaluateExpression (context, t1, op, t3) {
-    if (isNumeric(context, t1) && isNumeric(context, t3)) {
-        return evaluteScalarExpression(context, t1, op, t3);
+function evaluateMatrix (context, token) {
+    if (token instanceof Matrix) {
+        return token;
     }
 
-    if (isVector(context, t1) && isVector(context, t3)) {
-        return evaluateVectorExpression(context, t1, op, t3);
+    if (typeof token !== "object" || token.type !== "name") {
+        throw Error(`Invalid matrix value: [${token.value}]`);
     }
 
-    if (isVector(context, t1) && isNumeric(context, t3)) {
-        return evaluateVectorScalarExpression(context, t1, op, t3);
+    const v = context[token.value];
+
+    if (typeof v === "undefined") {
+        throw Error("Symbol not found: " + token.value);
+    } else if (!(v instanceof Matrix)) {
+        throw Error(`Variable '${token.value}' does not contain a vector value`);
     }
 
-    if (isNumeric(context, t1) && isVector(context, t3)) {
-        return evaluateScalarVectorExpression(context, t1, op, t3);
-    }
-
-    throw Error("Invalid expression");
+    return v;
 }
 
 /**
@@ -250,51 +181,6 @@ function evaluteScalarExpression (context, t1, op, t3) {
     const v3 = evaluateNumeric(context, t3);
 
     switch (op) {
-        case "+": {
-            return v1 + v3;
-        }
-        case "-": {
-            return v1 - v3;
-        }
-        case "*":
-        case "×":
-        {
-            return v1 * v3;
-        }
-        case "/":
-        case "÷":
-        {
-            return v1 / v3;
-        }
-        case "^": {
-            return Math.pow(v1, v3);
-        }
-        case "==": {
-            return v1 == v3;
-        }
-        case "!=":
-        case "≠":
-        {
-            return v1 != v3;
-        }
-        case "<": {
-            return v1 < v3;
-        }
-        case ">": {
-            return v1 > v3;
-        }
-        case "<=":
-        case "≤":
-        case "⩽":
-        {
-            return v1 <= v3;
-        }
-        case ">=":
-        case "≥":
-        case "⩾":
-        {
-            return v1 >= v3;
-        }
         case "&&": {
             return Boolean(v1 && v3);
         }
@@ -305,9 +191,16 @@ function evaluteScalarExpression (context, t1, op, t3) {
             throw Error("Use && to compare numbers");
         case "|":
             throw Error("Use || to compare numbers");
-    }
+        default: {
+            const fn = getOperator(op);
 
-    throw Error("Unrecognised operator: " + op);
+            if (fn) {
+                return fn(v1, v3);
+            }
+
+            throw Error("Unrecognised operator: " + op);
+        }
+    }
 }
 
 /**
@@ -326,66 +219,22 @@ function evaluateVectorExpression (context, t1, op, t3) {
     }
 
     switch (op) {
-        case "+": {
-            return v1.map((v,i) => v + v3[i]);
-        }
-        case "-": {
-            return v1.map((v,i) => v - v3[i]);
-        }
-        case "*":
-        case "×":
-        {
-            return v1.map((v,i) => v * v3[i]);
-        }
-        case "/":
-        case "÷":
-        {
-            return v1.map((v,i) => v / v3[i]);
-        }
-        case "^": {
-            return v1.map((v,i) => Math.pow(v, v3[i]));
-        }
-        case "==": {
-            return v1.map((v,i) => v == v3[i]);
-        }
-        case "!=":
-        case "≠":
-        {
-            return v1.map((v,i) => v != v3[i]);
-        }
-        case "<": {
-            return v1.map((v,i) => v < v3[i]);
-        }
-        case ">": {
-            return v1.map((v,i) => v > v3[i]);
-        }
-        case "<=":
-        case "≤":
-        case "⩽":
-        {
-            return v1.map((v,i) => v <= v3[i]);
-        }
-        case ">=":
-        case "≥":
-        case "⩾":
-        {
-            return v1.map((v,i) => v >= v3[i]);
-        }
-        case "&": {
-            return v1.map((v,i) => Boolean(v && v3[i]));
-        }
-        case "|": {
-            return v1.map((v,i) => Boolean(v || v3[i]));
-        }
         case "&&": {
             return v1.every((v,i) => v && v3[i]);
         }
         case "||": {
             return v1.every((v,i) => v || v3[i]);
         }
-    }
+        default: {
+            const fn = getOperator(op);
 
-    throw Error("Unrecognised operator: " + op);
+            if (fn) {
+                return v1.map((v, i) => fn(v, v3[i]));
+            }
+
+            throw Error("Unrecognised operator: " + op);
+        }
+    }
 }
 
 /**
@@ -428,66 +277,270 @@ function evaluateVectorScalarExpression (context, t1, op, t3) {
     const v3 = evaluateNumeric(context, t3);
 
     switch (op) {
-        case "+": {
-            return v1.map(v => v + v3);
-        }
-        case "-": {
-            return v1.map(v => v - v3);
-        }
-        case "*":
-        case "×":
-        {
-            return v1.map(v => v * v3);
-        }
-        case "/":
-        case "÷":
-        {
-            return v1.map(v => v / v3);
-        }
-        case "^": {
-            return v1.map(v => Math.pow(v, v3));
-        }
-        case "==": {
-            return v1.map(v => v == v3);
-        }
-        case "!=":
-        case "≠":
-        {
-            return v1.map(v => v != v3);
-        }
-        case "<": {
-            return v1.map(v => v < v3);
-        }
-        case ">": {
-            return v1.map(v => v > v3);
-        }
-        case "<=":
-        case "≤":
-        case "⩽":
-        {
-            return v1.map(v => v <= v3);
-        }
-        case ">=":
-        case "≥":
-        case "⩾":
-        {
-            return v1.map(v => v >= v3);
-        }
-        case "&": {
-            return v1.map(v => Boolean(v && v3));
-        }
-        case "|": {
-            return v1.map(v => Boolean(v || v3));
-        }
         case "&&": {
             return v1.every(v => v && v3);
         }
         case "||": {
             return v1.every(v => v || v3);
         }
+        default: {
+            const fn = getOperator(op);
+
+            if (fn) {
+                return v1.map(v => fn(v, v3));
+            }
+
+            throw Error("Unrecognised operator: " + op);
+        }
     }
 
-    throw Error("Unrecognised operator: " + op);
+}
+
+/**
+ *
+ * @param {Context} context
+ * @param {Token|number} t1
+ * @param {string} op
+ * @param {Token|Matrix} t3
+ */
+function evaluateScalarMatrixExpression (context, t1, op, t3) {
+    const n1 = evaluateNumeric(context, t1);
+    const v3 = evaluateMatrix(context, t3);
+
+    // Some operations are not commutative
+    switch (op) {
+        case "-": {
+            const out = new Matrix(v3.cols, v3.rows);
+            for (let i = 0; i < v3.cols * v3.rows; i++) {
+                out[i] = n1 - v3[i];
+            }
+            return out;
+        }
+        case "/": {
+            const out = new Matrix(v3.cols, v3.rows);
+            for (let i = 0; i < v3.cols * v3.rows; i++) {
+                out[i] = n1 / v3[i];
+            }
+            return out;
+        }
+        case "^": {
+            const out = new Matrix(v3.cols, v3.rows);
+            for (let i = 0; i < v3.cols * v3.rows; i++) {
+                out[i] = n1 ** v3[i];
+            }
+            return out;
+        }
+        default: {
+            return evaluateMatrixScalarExpression(context, v3, flipOperator(op), n1);
+        }
+    }
+}
+
+/**
+ *
+ * @param {Context} context
+ * @param {Token|Matrix} t1
+ * @param {string} op
+ * @param {Token|number} t3
+ */
+function evaluateMatrixScalarExpression (context, t1, op, t3) {
+    const v1 = evaluateMatrix(context, t1);
+    const v3 = evaluateNumeric(context, t3);
+
+    switch (op) {
+        case "&&": {
+            return v1.every(v => Boolean(v && v3));
+        }
+        case "||": {
+            return v1.every(v => Boolean(v || v3));
+        }
+        default: {
+            const fn = getOperator(op);
+
+            if (fn) {
+                const out = new Matrix(v1.cols, v1.rows);
+                for (let i = 0; i < v1.cols * v1.rows; i++) {
+                    out[i] = fn(v1[i], v3);
+                }
+                return out;
+            }
+
+            throw Error("Unrecognised operator: " + op);
+        }
+    }
+
+}
+
+/**
+ *
+ * @param {Context} context
+ * @param {Token|ValueType} value
+ */
+function isNumeric (context, value) {
+    if (typeof value === "number") {
+        return true;
+    }
+
+    if (Array.isArray(value) || typeof value !== "object") {
+        return false;
+    }
+
+    if (value.type !== "number" && value.type !== "name") {
+        return false;
+    }
+
+    const v = value.type === "name" ? context[value.value] : value.value;
+
+    if (typeof v === "undefined") {
+        return false;
+    } else if (typeof v !== "number") {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ *
+ * @param {Context} context
+ * @param {Token|ValueType} value
+ */
+function isString (context, value) {
+    if (typeof value === "string") {
+        return true;
+    }
+
+    if (Array.isArray(value) || typeof value !== "object") {
+        return false;
+    }
+
+    if (value.type !== "string" && value.type !== "name") {
+        return false;
+    }
+
+    const v = value.type === "name" ? context[value.value] : value.value;
+
+    if (typeof v === "undefined") {
+        return false;
+    } else if (typeof v !== "string") {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ *
+ * @param {Context} context
+ * @param {Token|ValueType} value
+ */
+function isVector (context, value) {
+    if (Array.isArray(value)) {
+        return true;
+    }
+
+    if (typeof value !== "object") {
+        return false;
+    }
+
+    if (value.type !== "name") {
+        return false;
+    }
+
+    const v = context[value.value];
+
+    if (typeof v === "undefined") {
+        return false;
+    } else if (!Array.isArray(v)) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ *
+ * @param {Context} context
+ * @param {Token|number[]|Matrix} token
+ * @returns {boolean}
+ */
+function isMatrix (context, token) {
+    if (token instanceof Matrix) {
+        return true;
+    }
+
+    if (typeof token !== "object" || token.type !== "name") {
+        return false
+    }
+
+    const v = context[token.value];
+
+    if (typeof v === "undefined") {
+        return false
+    } else if (!(v instanceof Matrix)) {
+        return false
+    }
+
+    return true;
+}
+
+/**
+ * @param {string} op
+ */
+function getOperator (op) {
+    switch (op) {
+        case "+": {
+            return (a, b) => a + b;
+        }
+        case "-": {
+            return (a, b) => a - b;
+        }
+        case "*":
+        case "×":
+        {
+            return (a, b) => a * b;
+        }
+        case "/":
+        case "÷":
+        {
+            return (a, b) => a / b;
+        }
+        case "^": {
+            return (a, b) => Math.pow(a, b);
+        }
+        case "==": {
+            return (a, b) => a == b;
+        }
+        case "!=":
+        case "≠":
+        {
+            return (a, b) => a != b;
+        }
+        case "<": {
+            return (a, b) => a < b;
+        }
+        case ">": {
+            return (a, b) => a > b;
+        }
+        case "<=":
+        case "≤":
+        case "⩽":
+        {
+            return (a, b) => a <= b;
+        }
+        case ">=":
+        case "≥":
+        case "⩾":
+        {
+            return (a, b) => a >= b;
+        }
+        case "&": {
+            return (a, b) => Boolean(a && b);
+        }
+        case "|": {
+            return (a, b) => Boolean(a || b);
+        }
+    }
 }
 
 /**
