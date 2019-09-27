@@ -49,6 +49,10 @@ function evaluateExpression (context, t1, op, t3) {
         return evaluateScalarMatrixExpression(context, t1, op, t3);
     }
 
+    if (isMatrix(context, t1) && isVector(context, t3)) {
+        return evaluateMatrixVectorExpression(context, t1, op, t3);
+    }
+
     throw Error("Invalid expression");
 }
 
@@ -369,6 +373,40 @@ function evaluateMatrixScalarExpression (context, t1, op, t3) {
         }
     }
 
+}
+
+
+
+/**
+ *
+ * @param {Context} context
+ * @param {Token|Matrix} t1
+ * @param {string} op
+ * @param {Token|Vector} t3
+ */
+function evaluateMatrixVectorExpression (context, t1, op, t3) {
+    const v1 = evaluateMatrix(context, t1);
+    const v3 = evaluateVector(context, t3);
+
+    if (v1.cols != v3.length) {
+        throw Error(`Matrix cols do not match Vector length: ${v1.length} and ${v3.length}`)
+    }
+
+    if (op !== "*" && op != "×") {
+        throw Error("Only Matrix-Vector multiplication is supported");
+    }
+
+    const out = [];
+
+    for (let i = 0; i < v1.rows; i++) {
+        out[i] = 0;
+
+        for (let j = 0; j < v1.cols; j++) {
+            out[i] += v1.getValue(i, j) * v3[j];
+        }
+    }
+
+    return out;
 }
 
 /**
