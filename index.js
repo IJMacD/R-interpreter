@@ -24,6 +24,15 @@ function interpreter (command, context, setContext) {
 
     const tokens = tokenizer(command);
 
+    return interpretTokens(context, setContext, tokens);
+}
+
+/**
+ * @param {{ [x: string]: any; }} context
+ * @param {import("../../Code/R-interpreter/tokenizer").Token[]} tokens
+ * @param {(context: { [name: string]: any; }) => void } setContext
+ */
+function interpretTokens(context, setContext, tokens) {
     if (tokens.length === 1) {
         /*
          * evaluate symbol
@@ -48,11 +57,38 @@ function interpreter (command, context, setContext) {
         throw Error("Invalid expression");
     }
 
+    if (tokens.length >= 3) {
+        const t1 = tokens[0];
+        const t2 = tokens[1];
+
+        /*
+         * evaluate assignment
+         * e.g.  a <- <expr>
+         */
+        if (t1.type === "name" && isAssignmentOp(t2, "left")) {
+            assignVariable(context, setContext, t1.value, interpretTokens(context, setContext, tokens.slice(2)));
+            return;
+        }
+
+        const n = tokens.length;
+        const tn = tokens[n - 1];
+        const tn_1 = tokens[n - 2];
+
+        /*
+         * evaluate assignment
+         * e.g.  2 -> b
+         * e.g.  a -> b
+         */
+        if (isAssignmentOp(tn_1, "right") && tn.type === "name") {
+            assignVariable(context, setContext, tn.value, interpretTokens(context, setContext, tokens.slice(0, n - 2)));
+            return;
+        }
+    }
+
     if (tokens.length === 3) {
         const t1 = tokens[0];
         const t2 = tokens[1];
         const t3 = tokens[2];
-
 
         /*
          * evaluate range
@@ -67,26 +103,6 @@ function interpreter (command, context, setContext) {
         }
 
         const op = assertString(t2.value);
-
-        /*
-         * evaluate assignment
-         * e.g.  a <- 1
-         * e.g.  b <- a
-         */
-        if (isAssignmentOp(t2, "left") && t1.type === "name") {
-            assignVariable(context, setContext, t1.value, evaluateValue(context, t3));
-            return;
-        }
-
-        /*
-         * evaluate assignment
-         * e.g.  2 -> b
-         * e.g.  a -> b
-         */
-        if (isAssignmentOp(t2, "right") && t3.type === "name") {
-            assignVariable(context, setContext, t3.value, evaluateValue(context, t1));
-            return;
-        }
 
         /*
          * evaluate string catenation
@@ -180,37 +196,6 @@ function interpreter (command, context, setContext) {
             return range(evaluateNumeric(context, t1), evaluateNumeric(context, t3), evaluateNumeric(context, t5));
         }
 
-        /*
-         * assignment of range
-         * e.g.  aa <- 1:5
-         */
-        if (t1.type === "name" &&
-            t2.type === "operator" && isAssignmentOp(t2, "left") &&
-            isNumeric(context, t3) &&
-            t4.type === "range" &&
-            isNumeric(context, t5)
-        ) {
-            const val = range(evaluateNumeric(context, t3), evaluateNumeric(context, t5));
-            assignVariable(context, setContext, t1.value, val);
-            return;
-        }
-
-        /*
-         * assignment of range
-         * e.g. 1:5 -> aa
-         */
-        if (
-            isNumeric(context, t1) &&
-            t2.type === "range" &&
-            isNumeric(context, t3) &&
-            t4.type === "operator" && isAssignmentOp(t4, "right") &&
-            t5.type === "name"
-        ) {
-            const val = range(evaluateNumeric(context, t1), evaluateNumeric(context, t3));
-            assignVariable(context, setContext, t5.value, val);
-            return;
-        }
-
         if (t2.type !== "operator" || t4.type !== "operator")
         {
             throw Error("Expression not supported");
@@ -218,26 +203,6 @@ function interpreter (command, context, setContext) {
 
         const op2 = assertString(t2.value);
         const op4 = assertString(t4.value);
-
-        /*
-         * assignment of operation
-         * e.g.  a <- 1 + 5
-         */
-        if (isAssignmentOp(t2, "left") && !isAssignmentOp(t4) && t1.type === "name") {
-            const val = evaluateExpression(context, t3, op4, t5);
-            assignVariable(context, setContext, t1.value, val);
-            return;
-        }
-
-        /*
-         * assignment of operation
-         * e.g.  1 + 5 -> a
-         */
-        if (isAssignmentOp(t4, "right") && !isAssignmentOp(t2) && t5.type === "name") {
-            const val = evaluateExpression(context, t1, op2, t3);
-            assignVariable(context, setContext, t5.value, val);
-            return;
-        }
 
         /*
          * evaluation of double operation
