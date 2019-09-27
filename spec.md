@@ -104,4 +104,19 @@ outlook     wind
 sunny       9
 ```
 
+## Function definitions
 
+```
+> 3 -> a
+> 0 -> b
+> 1 -> c
+> f(x) = a * x^2 + b * x + c
+> f(1)
+4
+> 100 -> a
+> f(1)
+4
+> f(x,a) = a * x^2 + b * x + c
+> f(1,100)
+101
+```
