@@ -3,9 +3,10 @@
 /** @typedef {number|string|boolean|number[]|string[]|boolean[]|Matrix} ValueType */
 /** @typedef {import('./tokenizer').Token} Token */
 
-const { evaluateExpression, evaluateVector, evaluateNumeric, isNumeric, evaluateValue, isVector } = require('./evaluate');
+const { evaluateExpression, evaluateVector, evaluateNumeric, isNumeric, evaluateValue, isVector, isString, evaluateString } = require('./evaluate');
 const tokenizer = require('./tokenizer');
-const { Matrix, identity } = require('./matrix');
+const Matrix = require('./matrix').default;
+const { identity } = require('./matrix');
 
 module.exports = interpreter;
 
@@ -85,6 +86,22 @@ function interpreter (command, context, setContext) {
         if (isAssignmentOp(t2, "right") && t3.type === "name") {
             assignVariable(context, setContext, t3.value, evaluateValue(context, t1));
             return;
+        }
+
+        /*
+         * evaluate string catenation
+         * e.g. "a" + "b"
+         */
+        if (isString(context, t1) && (t2.value === "+") && isString(context, t3)) {
+            return `${evaluateString(context, t1)}${evaluateString(context, t3)}`;
+        }
+
+        /*
+         * evaluate string repetition
+         * e.g. "a" * 3
+         */
+        if (isString(context, t1) && (t2.value === "*" || t2.value === "×") && isNumeric(context, t3)) {
+            return evaluateString(context, t1).repeat(evaluateNumeric(context, t3))
         }
 
         /*

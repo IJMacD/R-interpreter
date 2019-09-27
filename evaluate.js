@@ -7,9 +7,11 @@ module.exports = {
     evaluateValue,
     evaluateNumeric,
     evaluateVector,
+    evaluateString,
     evaluateExpression,
     isNumeric,
     isVector,
+    isString,
 };
 
 /**
@@ -54,6 +56,35 @@ function isNumeric (context, value) {
     if (typeof v === "undefined") {
         return false;
     } else if (typeof v !== "number") {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ *
+ * @param {Context} context
+ * @param {Token|ValueType} value
+ */
+function isString (context, value) {
+    if (typeof value === "string") {
+        return true;
+    }
+
+    if (Array.isArray(value) || typeof value !== "object") {
+        return false;
+    }
+
+    if (value.type !== "string" && value.type !== "name") {
+        return false;
+    }
+
+    const v = value.type === "name" ? context[value.value] : value.value;
+
+    if (typeof v === "undefined") {
+        return false;
+    } else if (typeof v !== "string") {
         return false;
     }
 
@@ -116,6 +147,39 @@ function evaluateNumeric (context, value) {
     if (typeof v === "undefined") {
         throw Error("Symbol not found: " + value.value);
     } else if (typeof v !== "number") {
+        throw Error(`Variable '${value.value}' does not contain a numeric value`);
+    }
+
+    return v;
+}
+
+/**
+ *
+ * @param {Context} context
+ * @param {Token|number} value
+ */
+function evaluateString (context, value) {
+    if (typeof value === "string") {
+        return value;
+    }
+
+    if (Array.isArray(value)) {
+        throw Error(`Invalid string value: [Array(${value.length})]`);
+    }
+
+    if (typeof value !== "object") {
+        throw Error(`Invalid string value: [${value}]`);
+    }
+
+    if (value.type !== "string" && value.type !== "name") {
+        throw Error(`Invalid string value: [${value.value}]`);
+    }
+
+    const v = value.type === "name" ? context[value.value] : value.value;
+
+    if (typeof v === "undefined") {
+        throw Error("Symbol not found: " + value.value);
+    } else if (typeof v !== "string") {
         throw Error(`Variable '${value.value}' does not contain a numeric value`);
     }
 
@@ -426,6 +490,9 @@ function evaluateVectorScalarExpression (context, t1, op, t3) {
     throw Error("Unrecognised operator: " + op);
 }
 
+/**
+ * @param {string} op
+ */
 function flipOperator (op) {
     if (op === ">") return "<";
     if (op === "<") return ">";

@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 const repl = require('repl');
+const util = require('util');
 const interpreter = require('./index');
+const Matrix = require('./matrix').default;
 
 let state = {};
 function setState (newState) {
@@ -16,4 +18,17 @@ function rEval (cmd, context, filename, callback) {
     }
 }
 
-repl.start({ prompt: "> ", eval: rEval });
+repl.start({ prompt: "> ", eval: rEval, writer: formatOutput });
+
+/**
+ *
+ * @param {import('.').ValueType} value
+ * @returns {string}
+ */
+function formatOutput (value) {
+  if (value instanceof Matrix) {
+    return value.toString();
+  }
+
+  return util.inspect(value, false, 4, true);
+}

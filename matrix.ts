@@ -1,4 +1,4 @@
-export class Matrix extends Float64Array {
+export default class Matrix extends Float64Array {
     cols: number;
     rows: number;
 

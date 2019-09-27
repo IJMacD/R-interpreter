@@ -10,6 +10,6 @@
     "typescript": "^3.6.3"
   },
   "scripts": {
-    "postinstall": "npx typescript --lib es2015 ./matrix.ts"
+    "postinstall": "./postInstall.bat"
   }
 }
