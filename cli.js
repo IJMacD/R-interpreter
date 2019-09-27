@@ -2,6 +2,7 @@
 
 const repl = require('repl');
 const util = require('util');
+const chalk = require('chalk');
 const interpreter = require('./index');
 const Matrix = require('./matrix').default;
 
@@ -14,20 +15,29 @@ function rEval (cmd, context, filename, callback) {
     try {
         callback(null, interpreter(cmd, state, setState));
     } catch (e) {
-        callback(e.message);
+        callback(null, e);
     }
 }
 
-repl.start({ prompt: "> ", eval: rEval, writer: formatOutput });
+repl.start({
+  prompt: "> ",
+  eval: rEval,
+  writer,
+  ignoreUndefined: true,
+});
 
 /**
  *
  * @param {import('.').ValueType} value
- * @returns {string}
+ * @returns {string|undefined}
  */
-function formatOutput (value) {
+function writer (value) {
   if (typeof value === "undefined") {
-    return "";
+    return undefined;
+  }
+
+  if (value instanceof Error) {
+    return chalk.red(value.message);
   }
 
   if (value instanceof Matrix) {

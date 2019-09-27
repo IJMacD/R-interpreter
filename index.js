@@ -15,11 +15,11 @@ module.exports = interpreter;
  * @param {string} command
  * @param {Context} context
  * @param {(context: Context) => void} setContext
- * @returns {ValueType}
+ * @returns {ValueType|undefined}
  */
 function interpreter (command, context, setContext) {
-    if (!command || command.trim().length === 0) {
-        return;
+    if (typeof command === "undefined" || !command || command.trim().length === 0) {
+        return undefined;
     }
 
     const tokens = tokenizer(command);
@@ -277,7 +277,7 @@ function interpretTokens(context, setContext, tokens) {
         }
     }
 
-    throw Error(`Command not recognised: '${command}'`);
+    throw Error("Unable to evaluate");
 }
 
 /**
