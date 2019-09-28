@@ -8,9 +8,11 @@
   },
   "dependencies": {
     "chalk": "^2.4.2",
+    "jest": "^24.9.0",
     "typescript": "^3.6.3"
   },
   "scripts": {
-    "postinstall": "./postInstall.bat"
+    "postinstall": "./postInstall.bat",
+    "test": "jest --coverage"
   }
 }

@@ -207,7 +207,7 @@ function interpretTokens(context, setContext, tokens) {
             const v = evaluateVector(context, t1);
             const i = evaluateNumeric(context, t3);
 
-            if (i < 1 || i >= v.length) {
+            if (i < 1 || i > v.length) {
                 throw Error(`Index out of range: ${i}/${v.length}`);
             }
 
