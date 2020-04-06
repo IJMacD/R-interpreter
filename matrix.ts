@@ -1,22 +1,27 @@
-export default class Matrix extends Float64Array {
+export default class Matrix {
+    data: Float64Array;
     cols: number;
     rows: number;
 
     constructor (cols: number, rows: number) {
-        super(cols * rows);
+        this.data = new Float64Array(cols * rows);
 
         this.cols = cols;
         this.rows = rows;
 
-        this.fill(0);
+        this.data.fill(0);
+    }
+
+    get length () {
+        return this.cols * this.rows;
     }
 
     getValue (i: number , j: number) {
-        return this[i * this.rows + j];
+        return this.data[i * this.rows + j];
     }
 
     setValue (i: number, j: number, value: number) {
-        this[i * this.rows + j] = value;
+        this.data[i * this.rows + j] = value;
     }
 
     add (other: Matrix) {
@@ -25,7 +30,7 @@ export default class Matrix extends Float64Array {
         }
 
         for (let i = 0; i < this.length; i++) {
-            this[i] += other[i];
+            this.data[i] += other.data[i];
         }
     }
 
@@ -36,7 +41,7 @@ export default class Matrix extends Float64Array {
             for (let i = 0; i < this.cols; i++) {
                 const index = i * this.rows + j;
 
-                str += this[index] + ' ';
+                str += this.data[index] + ' ';
             }
             str += '\n';
         }
@@ -51,20 +56,20 @@ export class Vector extends Matrix {
             super(1, size);
         } else {
             super(1, size.length);
-            this.set(size);
+            this.data.set(size);
         }
     }
 
     getValue (j: number) {
-        return this[j];
+        return this.data[j];
     }
 
     setValue (j: number, value: number) {
-        this[j] = value;
+        this.data[j] = value;
     }
 
     toString () {
-        return this.join('\n');
+        return this.data.join('\n');
     }
 }
 
@@ -94,7 +99,7 @@ export function cross (a: Matrix, b: Matrix) {
             const index = i * rows + j;
 
             for (let ii = 0; ii < depth; ii++) {
-                out[index] += a[ii * rows + j] * b[i * depth + ii];
+                out.data[index] += a.data[ii * rows + j] * b.data[i * depth + ii];
             }
         }
     }
